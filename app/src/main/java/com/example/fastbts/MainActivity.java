@@ -47,18 +47,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @SuppressLint("SetTextI18n")
     public void onClick(View view) {
-        if (view.getId()==R.id.button) {
-            TextView textView = findViewById(R.id.text);
-            textView.setText("clicked");
-            new Thread(() -> {
-                double bandwidth = FastBTS.Test()/1024; // kb/s
-                Log.d("bandwidth result", String.valueOf(bandwidth));
-//                handler.sendEmptyMessage(0);
-                Message msg = Message.obtain();
-                msg.obj = bandwidth + "kb/s";
-                handler.sendMessage(msg);
-            }).start();
-        }
+        new Thread(() -> {
+            double bandwidth = new FastBTS().SpeedTest("1","","","","","","","","","","","","","");
+            Log.d("bandwidth result", String.valueOf(bandwidth));
+            Message msg = Message.obtain();
+            msg.obj = bandwidth + "MB/s";
+            handler.sendMessage(msg);
+        }).start();
     }
 
     public void downloadFinish(String result) {
