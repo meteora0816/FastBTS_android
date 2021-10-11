@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             textView.setText("clicked");
             new Thread(() -> {
                 double bandwidth = FastBTS.Test()/1024; // kb/s
-                Log.d("bandwidth result", String.valueOf(bandwidth));
+                Log.d("bandwidth result", String.valueOf(bandwidth*8/1024));
 //                handler.sendEmptyMessage(0);
                 Message msg = Message.obtain();
                 msg.obj = bandwidth + "kb/s";

@@ -23,7 +23,7 @@ add_library( # Sets the name of the library.
 
              # Provides a relative path to your source file(s).
 #             web_task.cpp
-             fastbts.cpp)
+        cis.cpp)
 
 #include_directories(src/main/cpp/include/curl/)
 

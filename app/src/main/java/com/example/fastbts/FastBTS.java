@@ -64,6 +64,7 @@ public class FastBTS {
                 int j = 0, k = 0;
                 num = 0;
                 while ((byteRead = inStream.read(buffer)) != -1) {
+//                    Log.d("time", String.valueOf(System.currentTimeMillis()));
                     byteSum += byteRead;
                     long curTime = System.currentTimeMillis();
                     if (curTime-lastTime>=interval) {
@@ -73,7 +74,7 @@ public class FastBTS {
                         speedLine[num] = (long) ((double)(byteLine[num]-byteLine[windowStartPos])/(timeLine[num]-timeLine[windowStartPos])*1000);
 //                        Log.d("time", String.valueOf(curTime));
 //                        Log.d("size", String.valueOf(byteSum-lastSize));
-//                        Log.d("speed(2s,byte/second)", String.valueOf(speedLine[i]));
+//                        Log.d("speed(2s,byte/second)", String.valueOf(speedLine[num]));
                         j++;
                         if (j >= CIS_interval) {
                             j = 0;
