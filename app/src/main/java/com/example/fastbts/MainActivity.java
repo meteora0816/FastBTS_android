@@ -48,10 +48,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @SuppressLint("SetTextI18n")
     public void onClick(View view) {
         new Thread(() -> {
-            double bandwidth = new FastBTS().SpeedTest("1","","","","","","","","","","","","","");
+            double bandwidth = 0;
+            bandwidth = new FastBTS().SpeedTest("1712382","","","","","","4G","","","","","","","");
             Log.d("bandwidth result", String.valueOf(bandwidth));
             Message msg = Message.obtain();
-            msg.obj = bandwidth + "MB/s";
+            msg.obj = bandwidth + "Mbps";
             handler.sendMessage(msg);
         }).start();
     }
