@@ -113,7 +113,7 @@ extern "C" {
 
     JNIEXPORT jdoubleArray JNICALL
     Java_com_example_fastbts_NDKTools_CIS(JNIEnv *env, jclass clazz, jlongArray javaArr, jint javaArrSize) {
-        long long *speedArr = env->GetLongArrayElements(javaArr, NULL);
+        long *speedArr = reinterpret_cast<long *>(env->GetLongArrayElements(javaArr, nullptr));
         int size = javaArrSize;
 //        __android_log_print(ANDROID_LOG_INFO, "JNI_TAG" , "%d . %lld" , size , speedArr[1]);
 

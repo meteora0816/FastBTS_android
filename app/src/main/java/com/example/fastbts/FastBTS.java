@@ -10,7 +10,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -20,18 +19,25 @@ import java.util.Locale;
 
 
 public class FastBTS {
-    static private int DownloadSizeSleep = 50;// ms
-    static private int CISSleep = 200;// ms
-    static private int TimeWindow = 2000; // ms
-    final static private int Timeout = 8000;
+
+    final static private int Timeout = 8000;        // connect timeout
     final static private int PingTimeout = 8000;
-    static private int TestTimeout = 8000; // failed after 8000ms
-    static private int MaxTrafficUse = 200; // MB
-    static private int KSimilar = 5;
-    static private double Threshold = 0.95;
     final static private String MasterServerIP = "118.31.164.30";
+
+    private int DownloadSizeSleep = 50;// ms
+    private int CISSleep = 200;// ms
+    private int TimeWindow = 2000; // ms
+    private int TestTimeout = 8000; // failed after 8000ms
+    private int MaxTrafficUse = 200; // MB
+    private int KSimilar = 5;
+    private double Threshold = 0.95;
     private FastBTSRecord fastBTSRecord;
 
+    static boolean stop;
+    static public void Stop() {
+        stop = true;
+
+    }
 
     class CISChecker extends Thread {
         ArrayList<Double> speedSample;
@@ -54,32 +60,39 @@ public class FastBTS {
                     synchronized (lock){
                         Collections.sort(speedSample);
                     }
-                    int n=speedSample.size();
+                    int bias = 0;
+                    while (speedSample.get(bias)==0) bias++;
+//                    Log.d("bias:", String.valueOf(bias));
+                    int n=speedSample.size()-bias;
                     if(n<=2){
                         continue;
                     }
+//                    Log.d("speedSample",speedSample.toString());
                     double up = 0;
                     double down = 0;
                     double k2l = 0;
-                    double minInterval = (speedSample.get(n-1)-speedSample.get(0))/(n-1);
+                    double minInterval = (speedSample.get(n-1+bias)-speedSample.get(0+bias))/(n-1);
+//                    Log.d("minInterval", String.valueOf(minInterval));
                     for(int i=0;i<n;i++){
                         for(int j=i+1;j<n;j++){
-                            double k2ltemp = (j-i+1)*(j-i+1)/Math.max(speedSample.get(j)-speedSample.get(i), minInterval);
+                            double k2ltemp = (j-i+1)*(j-i+1)/Math.max((speedSample.get(j+bias)-speedSample.get(i+bias)), minInterval);
                             if(k2ltemp>k2l){
                                 k2l = k2ltemp;
-                                up = speedSample.get(j);
-                                down = speedSample.get(i);
+                                up = speedSample.get(j+bias);
+                                down = speedSample.get(i+bias);
                             }
                         }
                     }
                     double res=0;
                     double cnt=0;
                     for(int i=0;i<n;i++){
-                        if(speedSample.get(i)>=down && speedSample.get(i)<=up){
-                            res+=speedSample.get(i);
+                        if(speedSample.get(i+bias)>=down && speedSample.get(i+bias)<=up){
+                            res+=speedSample.get(i+bias);
                             cnt++;
                         }
                     }
+//                    Log.d("up and down", "up: " + up + " down: " + down);
+//                    Log.d("CISSpeed", "res:"+res+" cnt:"+cnt+" Speed:"+String.valueOf(res/cnt));
                     CISSpeed = res/cnt;
                     if(isSimilarCIS(up,down,lastUp,lastDown)){
                         similarCnt++;
@@ -91,10 +104,10 @@ public class FastBTS {
                     }
                     lastDown = down;
                     lastUp = up;
-                    if(System.currentTimeMillis() - startTime >= TestTimeout){
-                        finish = true;
-                    }
-                } catch (InterruptedException e) {
+//                    if(System.currentTimeMillis() - startTime >= TestTimeout){
+//                        finish = true;
+//                    }
+                } catch (Exception e) {
 //                    e.printStackTrace();
                 }
             }
@@ -107,7 +120,7 @@ public class FastBTS {
         }
     }
 
-    class DownloadThread extends Thread{
+    class DownloadThread extends Thread {
         URL url;
         long size; // byte
         DownloadThread(String url){
@@ -141,6 +154,7 @@ public class FastBTS {
             }
         }
     }
+
     class InitThread extends Thread {
         String masterIp;
         ArrayList<String> ipList;
@@ -276,7 +290,8 @@ public class FastBTS {
             return ipSelected;
         }
     }
-    class PingThread extends Thread implements Comparable{
+
+    class PingThread extends Thread implements Comparable {
         URL url;
         String ip;
         long rtt;
@@ -328,11 +343,11 @@ public class FastBTS {
         fastBTSRecord.all_server_ip_latencies_ms = initThread.getAll_server_ip_latencies_ms();
         fastBTSRecord.selected_server_ips = initThread.getSelected_server_ips();
         fastBTSRecord.ip = initThread.clientIp;
-//        Log.d("ip_selected", initThread.getIpSelected().toString());
+        Log.d("ip_selected", initThread.getIpSelected().toString());
         return initThread.getIpSelected();
     }
 
-    static class FastBTSRecord{
+    class FastBTSRecord {
         String ip;
         String bandwidth_Mbps;
         String web_or_app = "app";
@@ -354,7 +369,7 @@ public class FastBTS {
         String user_lon;
         String user_as;
         String user_timezone;
-//        String dataset_server_timestamp;
+        //        String dataset_server_timestamp;
         String others = "";
         String baseline_bandwidth_Mbps;
         String user_uid;
@@ -374,7 +389,7 @@ public class FastBTS {
         public void setDataFromYouSheng(String user_uid, String brand, String model, String os_type, String os_version,
                                         String soft_version, String network_type, String user_isp_id,
                                         String user_region_id, String user_city_id, String user_lat,
-                                        String user_lon, String user_as, String user_timezone){
+                                        String user_lon, String user_as, String user_timezone, String baseline_bandwidth_Mbps){
             this.user_uid = user_uid;
             this.brand = brand;
             this.model = model;
@@ -389,6 +404,7 @@ public class FastBTS {
             this.user_lon = user_lon;
             this.user_as = user_as;
             this.user_timezone = user_timezone;
+            this.baseline_bandwidth_Mbps = baseline_bandwidth_Mbps;
         }
         public boolean sendRecord(){
             try {
@@ -421,7 +437,6 @@ public class FastBTS {
                 obj.put("baseline_bandwidth_Mbps",baseline_bandwidth_Mbps);
                 obj.put("is_valid", is_valid);
 
-//                Log.d("json = ",obj.toString());
 
                 String path = "http://47.104.134.102/fastbts/";
                 URL url = new URL(path);
@@ -430,11 +445,12 @@ public class FastBTS {
                 conn.setConnectTimeout(Timeout);
                 conn.setReadTimeout(Timeout);
                 conn.setRequestProperty("content-type", "application/json");
-                conn.connect();
+//                Log.d("json = ",obj.toString());
                 OutputStream outStream = conn.getOutputStream();
                 outStream.write(obj.toString().getBytes());
                 outStream.flush();
                 outStream.close();
+                conn.connect();
                 // get response
                 StringBuilder msg = new StringBuilder();
                 if (conn.getResponseCode() == 200) {
@@ -443,12 +459,14 @@ public class FastBTS {
                     while ((line = reader.readLine()) != null) {
                         msg.append(line).append("\n");
                     }
+
                     reader.close();
                 }
+//                Log.d("conn response", String.valueOf(conn.getResponseCode()));
 //                Log.d("database response", msg.toString());
                 conn.disconnect();
             } catch (Exception e) {
-//                e.printStackTrace();
+                e.printStackTrace();
                 return false;
             }
             return true;
@@ -456,21 +474,25 @@ public class FastBTS {
     }
 
     /*
-    * 测速流程：
-    * 1.选服务器，并设置几个线程
-    * 2.多线程下载，每个线程维护自己的下载量
-    * 3.主线程维护总下载量，并记录对应时间点，记入队列；每次队首元素与当前时间相差超过2s，剔除超时数据
-    * 4.CIS线程每隔一段时间进行，并控制全局变量指导测速结束
-    * */
-    public double SpeedTest(String user_uid, String brand, String model, String os_type, String os_version,
+     * 测速流程：
+     * 1.选服务器，并设置几个线程
+     * 2.多线程下载，每个线程维护自己的下载量
+     * 3.主线程维护总下载量，并记录对应时间点，记入队列；每次队首元素与当前时间相差超过2s，剔除超时数据
+     * 4.CIS线程每隔一段时间进行，并控制全局变量指导测速结束
+     * */
+    public double SpeedTest(String user_uid,
+                            String brand, String model, String os_type, String os_version,
                             String soft_version, String network_type, String user_isp_id,
                             String user_region_id, String user_city_id, String user_lat,
-                            String user_lon, String user_as, String user_timezone) {
+                            String user_lon, String user_as, String user_timezone, String baseline_bandwidth_Mbps) {
+
+        stop = false;
         fastBTSRecord = new FastBTSRecord();
         fastBTSRecord.setDataFromYouSheng(user_uid, brand, model, os_type, os_version,
-                                            soft_version, network_type, user_isp_id,
-                                            user_region_id, user_city_id, user_lat,
-                                            user_lon, user_as, user_timezone);
+                soft_version, network_type, user_isp_id,
+                user_region_id, user_city_id, user_lat,
+                user_lon, user_as, user_timezone, baseline_bandwidth_Mbps);
+
         // 服务器选择机制
         ArrayList<String> serverIP = getServerIP(network_type);
         if (serverIP.isEmpty()&&fastBTSRecord.is_valid!="0") {
@@ -493,7 +515,7 @@ public class FastBTS {
             downloadThread.add( new DownloadThread("http://"+ip+"/datafile?"+Math.floor(Math.random()*100000)));
         }
 
-        ArrayList<Double> speedSample = new ArrayList<Double>();
+        ArrayList<Double> speedSample = new ArrayList<>();
         Object lock = new Object();
         CISChecker checker = new CISChecker(speedSample, lock);
 
@@ -535,24 +557,28 @@ public class FastBTS {
                 posRecord++;
             }
 //            Log.d("speed ", String.valueOf(checker.CISSpeed));
-            if (checker.finish) {
+            if (nowTime - startTime >= 2500 && checker.finish) {
                 fastBTSRecord.is_valid = "1";
                 break;
             } else if (nowTime - startTime >= TestTimeout) {
                 fastBTSRecord.is_valid = "0";
                 fastBTSRecord.othersAdd("Exceeding the time limit");
                 break;
-            } else if (downloadSizeMBits/8>=MaxTrafficUse) {
+            } else if (downloadSizeMBits/8 >= MaxTrafficUse) {
                 fastBTSRecord.is_valid = "0";
                 fastBTSRecord.othersAdd("Exceeding the traffic limit");
                 break;
+            } else if (stop) {
+                fastBTSRecord.is_valid = "0";
+                fastBTSRecord.othersAdd("Another speed test job is running");
+                break;
             }
         }
-        for(DownloadThread t : downloadThread){
+        for(DownloadThread t : downloadThread) {
             t.interrupt();
         }
-        // send records to our server
 
+        // send records to our server
         fastBTSRecord.bandwidth_Mbps = String.format(Locale.CHINA, "%.4f", checker.CISSpeed);
         fastBTSRecord.duration_s = String.format(Locale.CHINA, "%.2f", (double)(System.currentTimeMillis()-startTime)/1000);
         fastBTSRecord.traffic_MB = String.format(Locale.CHINA, "%.4f", (double)(sizeRecord.get(sizeRecord.size()-1))/8);

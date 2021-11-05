@@ -1,7 +1,5 @@
 package com.example.fastbts;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.Handler;
@@ -10,6 +8,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import java.lang.ref.WeakReference;
 
@@ -43,22 +43,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         Button button = findViewById(R.id.button);
         button.setOnClickListener(this);
+        Button button3 = findViewById(R.id.button3);
+        button3.setOnClickListener(this);
     }
 
-    @SuppressLint("SetTextI18n")
+    @SuppressLint({"SetTextI18n", "NonConstantResourceId"})
     public void onClick(View view) {
-        new Thread(() -> {
-            double bandwidth = 0;
-            bandwidth = new FastBTS().SpeedTest("1712382","","","","","","4G","","","","","","","");
-            Log.d("bandwidth result", String.valueOf(bandwidth));
-            Message msg = Message.obtain();
-            msg.obj = bandwidth + "Mbps";
-            handler.sendMessage(msg);
-        }).start();
+        switch (view.getId()) {
+            case R.id.button:
+                new Thread(() -> {
+                    double bandwidth = 0;
+                    bandwidth = new FastBTS().SpeedTest("1712382","","","","","","","","","","","","","","500");
+                    Log.d("bandwidth result", String.valueOf(bandwidth));
+                    Message msg = Message.obtain();
+                    msg.obj = bandwidth + "Mbps";
+                    handler.sendMessage(msg);
+                }).start();
+                break;
+            case R.id.button3:
+                FastBTS.Stop();
+                break;
+        }
+
+
     }
 
     public void downloadFinish(String result) {
-//        System.out.println(result);
+        System.out.println(result);
         textView.setText(result);
     }
 

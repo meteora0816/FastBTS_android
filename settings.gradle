@@ -8,4 +8,3 @@ dependencyResolutionManagement {
 }
 rootProject.name = "FastBTS"
 include ':app'
-include ':FastBTS'
