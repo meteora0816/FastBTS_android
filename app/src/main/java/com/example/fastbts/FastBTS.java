@@ -486,6 +486,7 @@ public class FastBTS {
                             String user_region_id, String user_city_id, String user_lat,
                             String user_lon, String user_as, String user_timezone, String baseline_bandwidth_Mbps) {
 
+        Log.d("network type", "aaa");
         stop = false;
         fastBTSRecord = new FastBTSRecord();
         fastBTSRecord.setDataFromYouSheng(user_uid, brand, model, os_type, os_version,
@@ -582,7 +583,6 @@ public class FastBTS {
         fastBTSRecord.bandwidth_Mbps = String.format(Locale.CHINA, "%.4f", checker.CISSpeed);
         fastBTSRecord.duration_s = String.format(Locale.CHINA, "%.2f", (double)(System.currentTimeMillis()-startTime)/1000);
         fastBTSRecord.traffic_MB = String.format(Locale.CHINA, "%.4f", (double)(sizeRecord.get(sizeRecord.size()-1))/8);
-
         fastBTSRecord.sendRecord();
 
         return checker.CISSpeed;
