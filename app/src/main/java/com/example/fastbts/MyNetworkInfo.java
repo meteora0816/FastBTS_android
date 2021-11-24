@@ -281,6 +281,7 @@ public class MyNetworkInfo {
         public String rssi;
         public String linkSpeed;
         public String networkId;
+        public String hiddenSSID;
 
         /* Added in API 21 */
         public String frequency;
@@ -300,10 +301,14 @@ public class MyNetworkInfo {
         public String currentSecurityType;
         public String subscriptionId;
 
+        /* Nearby AP info */
+        public String ScanResultLength;
+        public String ScanResultInfo;
+
         public WifiInfo(String SSID, String BSSID, String rssi, String linkSpeed, String networkId, String frequency,
                         String passpointFqdn, String passpointProviderFriendlyName, String rxLinkSpeedMbps, String txLinkSpeedMbps,
                         String maxSupportedRxLinkSpeedMbps, String maxSupportedTxLinkSpeedMbps, String wifiStandard,
-                        String currentSecurityType, String subscriptionId) {
+                        String currentSecurityType, String subscriptionId, String hiddenSSID, String ScanResultLength, String ScanResultInfo) {
             this.SSID = SSID;
             this.BSSID = BSSID;
             this.rssi = rssi;
@@ -319,6 +324,9 @@ public class MyNetworkInfo {
             this.wifiStandard = wifiStandard;
             this.currentSecurityType = currentSecurityType;
             this.subscriptionId = subscriptionId;
+            this.hiddenSSID = hiddenSSID;
+            this.ScanResultInfo = ScanResultInfo;
+            this.ScanResultLength = ScanResultLength;
         }
     }
 

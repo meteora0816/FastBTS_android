@@ -343,7 +343,7 @@ public class FastBTS {
         fastBTSRecord.all_server_ip_latencies_ms = initThread.getAll_server_ip_latencies_ms();
         fastBTSRecord.selected_server_ips = initThread.getSelected_server_ips();
         fastBTSRecord.ip = initThread.clientIp;
-        Log.d("ip_selected", initThread.getIpSelected().toString());
+//        Log.d("ip_selected", initThread.getIpSelected().toString());
         return initThread.getIpSelected();
     }
 
@@ -486,7 +486,7 @@ public class FastBTS {
                             String user_region_id, String user_city_id, String user_lat,
                             String user_lon, String user_as, String user_timezone, String baseline_bandwidth_Mbps) {
 
-        Log.d("network type", "aaa");
+//        Log.d("network type", "aaa");
         stop = false;
         fastBTSRecord = new FastBTSRecord();
         fastBTSRecord.setDataFromYouSheng(user_uid, brand, model, os_type, os_version,

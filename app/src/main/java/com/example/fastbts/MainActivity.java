@@ -7,6 +7,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import 	android.net.wifi.ScanResult;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -40,6 +41,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
@@ -104,12 +107,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     String networkInfoStr = gson.toJson(myNetworkInfo);
                     Log.d("NetworkInfo:", networkInfoStr);
 
+                    /* Set constant timestamp */
+                    Timer timer = new Timer();
+                    timer.schedule(new ContinuesUpdateTask(myNetworkInfo), 0, 500);
+
                     double bandwidth = 0;
                     bandwidth = new FastBTS().SpeedTest("1712382", "", "", "", "", "", "", "", "", "", "", "", "", "", "500");
-                    Log.d("bandwidth result", String.valueOf(bandwidth));
+//                    Log.d("bandwidth result", String.valueOf(bandwidth));
                     Message msg = Message.obtain();
                     msg.obj = bandwidth + "Mbps";
                     handler.sendMessage(msg);
+
+                    Log.d("###########################:", "########################################");
+
+                    timer.cancel();
+                    Gson gson2 = new Gson();
+                    String networkInfoStr2 = gson2.toJson(myNetworkInfo);
+                    Log.d("NetworkInfo:", networkInfoStr2);
+
                 }).start();
                 break;
             case R.id.button3:
@@ -447,7 +462,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         MyNetworkInfo.CellInfo.CellSignalStrengthTdscdma cellSignalStrength = getCellSignalStrengthTdscdma(cellInfoTdscdma.getCellSignalStrength());
                         myCellInfoList.add(new MyNetworkInfo.CellInfo("TDSCDMA", cellIdentity, cellSignalStrength));
                     }
-
                     if (cellInfo instanceof CellInfoNr) {
                         CellInfoNr cellInfoNr = (CellInfoNr) cellInfo;
                         MyNetworkInfo.CellInfo.CellIdentityNr cellIdentity = getCellIdentityNr((CellIdentityNr) cellInfoNr.getCellIdentity());
@@ -469,6 +483,37 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         String linkSpeed = String.valueOf(wifiInfo.getLinkSpeed());
         String networkId = String.valueOf(wifiInfo.getNetworkId());
         String frequency = String.valueOf(wifiInfo.getFrequency());
+        String hiddenSSID = String.valueOf(wifiInfo.getHiddenSSID());
+
+        //get nearby ScanResult Info
+        List<ScanResult> myScanResults = wifiManager.getScanResults();
+        String ScanResultLength = String.valueOf(myScanResults.size());
+        Log.d("###ScanResultLength",ScanResultLength);
+        String ScanResultInfo = "";
+        for(ScanResult oneScanResult : myScanResults) {
+            //API Level 1
+            String tmpBSSID = oneScanResult.BSSID;
+            String tmpSSID = oneScanResult.SSID;
+//            Log.d("###out: ", (tmpSSID +" "+tmpBSSID+ "!!!\n"));
+            // Log.d("###tmpSSID",tmpSSID);
+            String tmpFrequency = String.valueOf(oneScanResult.frequency);
+            String tmpLevel = String.valueOf(oneScanResult.level);
+            //API Level 23
+            String tmpChannelWidth, tmpStandard;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                tmpChannelWidth = String.valueOf(oneScanResult.channelWidth);
+            else
+                tmpChannelWidth = "Added in API level 23";
+            //API Level 30
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                tmpStandard = String.valueOf(oneScanResult.getWifiStandard());
+            else
+                tmpStandard = "Added in API level 30";
+            ScanResultInfo += tmpBSSID+","+tmpSSID+","+tmpFrequency+","+tmpLevel+","+
+                    tmpChannelWidth+","+tmpStandard+";";
+//            Log.d("###Nearby AP Info:", ScanResultInfo);
+        }
+
 
         String passpointFqdn, passpointProviderFriendlyName, rxLinkSpeedMbps, txLinkSpeedMbps;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -504,6 +549,151 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return new MyNetworkInfo.WifiInfo(SSID, BSSID, rssi, linkSpeed, networkId, frequency,
                 passpointFqdn, passpointProviderFriendlyName, rxLinkSpeedMbps, txLinkSpeedMbps,
                 maxSupportedRxLinkSpeedMbps, maxSupportedTxLinkSpeedMbps, wifiStandard,
-                currentSecurityType, subscriptionId);
+                currentSecurityType, subscriptionId, hiddenSSID, ScanResultLength, ScanResultInfo);
+    }
+
+    public class ContinuesUpdateTask extends TimerTask{
+        public MyNetworkInfo MyNetworkInfo;
+        ContinuesUpdateTask(MyNetworkInfo MyNetworkInfo){
+            this.MyNetworkInfo = MyNetworkInfo;
+        }
+        public void run() {
+            monitorWiFiInfo();
+            monitorCellInfo();
+        }
+        public void monitorWiFiInfo(){
+            WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
+            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+            String rssi = String.valueOf(wifiInfo.getRssi());
+            String linkSpeed = String.valueOf(wifiInfo.getLinkSpeed());
+            this.MyNetworkInfo.wifiInfo.linkSpeed += (";" + linkSpeed);
+            this.MyNetworkInfo.wifiInfo.rssi += (";" + rssi);
+            String rxLinkSpeedMbps, txLinkSpeedMbps;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                rxLinkSpeedMbps = String.valueOf(wifiInfo.getRxLinkSpeedMbps());
+                txLinkSpeedMbps = String.valueOf(wifiInfo.getTxLinkSpeedMbps());
+                this.MyNetworkInfo.wifiInfo.rxLinkSpeedMbps += (";" + rxLinkSpeedMbps);
+                this.MyNetworkInfo.wifiInfo.txLinkSpeedMbps += (";" + txLinkSpeedMbps);
+            }
+            else {
+                rxLinkSpeedMbps = "";
+                txLinkSpeedMbps = "";
+            }
+        }
+        public void monitorCellInfo(){
+            TelephonyManager telephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                Looper.prepare();
+                //Toast.makeText(this, "No permission: ACCESS_FINE_LOCATION", Toast.LENGTH_SHORT).show();
+                Looper.loop();
+            }
+
+            List<CellInfo> cellInfoList = telephonyManager.getAllCellInfo();
+            for (CellInfo cellInfo : cellInfoList) {
+                if (cellInfo.isRegistered()) {
+                    if (cellInfo instanceof CellInfoCdma) {
+                        CellInfoCdma cellInfoCdma = (CellInfoCdma) cellInfo;
+                        for (MyNetworkInfo.CellInfo tmp : this.MyNetworkInfo.cellInfo) {
+                            if (tmp.cellType.equals("CDMA")) {
+                                MyNetworkInfo.CellInfo.CellIdentityCdma identity_cdma = (MyNetworkInfo.CellInfo.CellIdentityCdma) tmp.cellIdentity;
+                                MyNetworkInfo.CellInfo.CellSignalStrengthCdma ss_cdma = (MyNetworkInfo.CellInfo.CellSignalStrengthCdma) tmp.cellSignalStrength;
+                                if (identity_cdma.basestationId.equals(String.valueOf(cellInfoCdma.getCellIdentity().getBasestationId()))) {
+                                    ss_cdma.cdmaDbm += (";"+String.valueOf(cellInfoCdma.getCellSignalStrength().getCdmaDbm()));
+                                    ss_cdma.dbm += (";"+String.valueOf(cellInfoCdma.getCellSignalStrength().getDbm()));
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (cellInfo instanceof CellInfoGsm) {
+                        CellInfoGsm cellInfoGsm = (CellInfoGsm) cellInfo;
+                        for (MyNetworkInfo.CellInfo tmp : this.MyNetworkInfo.cellInfo) {
+                            if (tmp.cellType.equals("GSM")) {
+                                MyNetworkInfo.CellInfo.CellIdentityGsm identity_gsm = (MyNetworkInfo.CellInfo.CellIdentityGsm) tmp.cellIdentity;
+                                MyNetworkInfo.CellInfo.CellSignalStrengthGsm ss_gsm = (MyNetworkInfo.CellInfo.CellSignalStrengthGsm) tmp.cellSignalStrength;
+                                if (identity_gsm.cid.equals(String.valueOf(cellInfoGsm.getCellIdentity().getCid()))) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                                        ss_gsm.rssi += (";"+String.valueOf(cellInfoGsm.getCellSignalStrength().getRssi()));
+                                    ss_gsm.dbm += (";"+String.valueOf(cellInfoGsm.getCellSignalStrength().getDbm()));
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (cellInfo instanceof CellInfoLte) {
+                        CellInfoLte cellInfoLte = (CellInfoLte) cellInfo;
+                        for (MyNetworkInfo.CellInfo tmp : this.MyNetworkInfo.cellInfo) {
+                            if (tmp.cellType.equals("LTE")) {
+                                MyNetworkInfo.CellInfo.CellIdentityLte identity_lte = (MyNetworkInfo.CellInfo.CellIdentityLte) tmp.cellIdentity;
+                                MyNetworkInfo.CellInfo.CellSignalStrengthLte ss_lte = (MyNetworkInfo.CellInfo.CellSignalStrengthLte) tmp.cellSignalStrength;
+                                if (identity_lte.ci.equals(String.valueOf(cellInfoLte.getCellIdentity().getCi())) && identity_lte.pci.equals(String.valueOf(cellInfoLte.getCellIdentity().getPci()))) {
+//                                    Log.d("!!!!!!!!!!!!!!","!!!!!!!!!!!!!!!!!!!");
+                                    ss_lte.dbm += (";"+String.valueOf(cellInfoLte.getCellSignalStrength().getDbm()));
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                        ss_lte.rsrp += ";";
+                                        ss_lte.rsrp += String.valueOf(cellInfoLte.getCellSignalStrength().getRsrp());
+                                        ss_lte.rsrq += ";";
+                                        ss_lte.rsrq += String.valueOf(cellInfoLte.getCellSignalStrength().getRsrq());
+//                                        Log.d("!!!!!!!!!rsrp",ss_lte.rsrp);
+                                    }
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                                        ss_lte.rssi += (";"+String.valueOf(cellInfoLte.getCellSignalStrength().getRssi()));
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (cellInfo instanceof CellInfoWcdma) {
+                        CellInfoWcdma cellInfoWcdma = (CellInfoWcdma) cellInfo;
+                        for (MyNetworkInfo.CellInfo tmp : this.MyNetworkInfo.cellInfo) {
+                            if (tmp.cellType.equals("WCDMA")) {
+                                MyNetworkInfo.CellInfo.CellIdentityWcdma identity_wcdma = (MyNetworkInfo.CellInfo.CellIdentityWcdma) tmp.cellIdentity;
+                                MyNetworkInfo.CellInfo.CellSignalStrengthWcdma ss_wcdma = (MyNetworkInfo.CellInfo.CellSignalStrengthWcdma) tmp.cellSignalStrength;
+                                if (identity_wcdma.cid.equals(String.valueOf(cellInfoWcdma.getCellIdentity().getCid()))) {
+                                    ss_wcdma.dbm += (";"+String.valueOf(cellInfoWcdma.getCellSignalStrength().getDbm()));
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        if (cellInfo instanceof CellInfoTdscdma) {
+                            CellInfoTdscdma cellInfoTdscdma = (CellInfoTdscdma) cellInfo;
+                            for (MyNetworkInfo.CellInfo tmp : this.MyNetworkInfo.cellInfo) {
+                                if (tmp.cellType.equals("TDSCDMA")) {
+                                    MyNetworkInfo.CellInfo.CellIdentityTdscdma identity_tdscdma = (MyNetworkInfo.CellInfo.CellIdentityTdscdma) tmp.cellIdentity;
+                                    MyNetworkInfo.CellInfo.CellSignalStrengthTdscdma ss_tdscdma = (MyNetworkInfo.CellInfo.CellSignalStrengthTdscdma) tmp.cellSignalStrength;
+                                    if (identity_tdscdma.cid.equals(String.valueOf(cellInfoTdscdma.getCellIdentity().getCid()))) {
+                                        ss_tdscdma.dbm += (";"+String.valueOf(cellInfoTdscdma.getCellSignalStrength().getDbm()));
+                                        ss_tdscdma.rscp += (";"+String.valueOf(cellInfoTdscdma.getCellSignalStrength().getRscp()));
+                                        break;
+                                    }
+                                }
+                            }
+
+                        }
+                        if (cellInfo instanceof CellInfoNr) {
+                            CellInfoNr cellInfoNr = (CellInfoNr) cellInfo;
+                            for (MyNetworkInfo.CellInfo tmp : this.MyNetworkInfo.cellInfo) {
+                                if (tmp.cellType.equals("NR")) {
+                                    MyNetworkInfo.CellInfo.CellIdentityNr identity_nr = (MyNetworkInfo.CellInfo.CellIdentityNr) tmp.cellIdentity;
+                                    MyNetworkInfo.CellInfo.CellSignalStrengthNr ss_nr = (MyNetworkInfo.CellInfo.CellSignalStrengthNr) tmp.cellSignalStrength;
+                                    CellIdentityNr cell_identity_nr = (CellIdentityNr) cellInfoNr.getCellIdentity();
+                                    CellSignalStrengthNr cell_ss_nr = (CellSignalStrengthNr) cellInfoNr.getCellSignalStrength();
+                                    if (identity_nr.nci.equals(String.valueOf((cell_identity_nr.getNci())))) {
+                                        ss_nr.dbm += (";"+String.valueOf(cellInfoNr.getCellSignalStrength().getDbm()));
+                                        ss_nr.ssRsrp += (";"+String.valueOf(cell_ss_nr.getSsRsrp()));
+                                        ss_nr.ssRsrq += (";"+String.valueOf(cell_ss_nr.getSsRsrq()));
+                                        ss_nr.ssSinr += (";"+String.valueOf(cell_ss_nr.getSsSinr()));
+                                        break;
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+        }
     }
 }
