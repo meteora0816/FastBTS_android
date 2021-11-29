@@ -568,9 +568,13 @@ public class FastBTS {
             cell_info_strs.add(cell_info_str);
         }
         String cell_info_json = "[";
-        for (String cell_info_str:cell_info_strs)
-            cell_info_json = cell_info_json + cell_info_str + ",";
-        cell_info_json = cell_info_json.substring(0, cell_info_json.length() - 1) + "]";
+        for (int i = 0; i < cell_info_strs.size(); ++i) {
+            String cell_info_str = cell_info_strs.get(i);
+            cell_info_json = cell_info_json + cell_info_str;
+            if (i < cell_info_strs.size() - 1)
+                cell_info_json = cell_info_json + ",";
+        }
+        cell_info_json = cell_info_json + "]";
         String wifi_info_json = gson.toJson(wifiInfo);
 
         /* Set constant timestamp */
@@ -694,9 +698,13 @@ public class FastBTS {
             cell_info_strs2.add(cell_info_str2);
         }
         String cell_info_json2 = "[";
-        for (String cell_info_str2:cell_info_strs2)
-            cell_info_json2 = cell_info_json2 + cell_info_str2 + ",";
-        cell_info_json2 = cell_info_json2.substring(0, cell_info_json2.length() - 1) + "]";
+        for (int i = 0; i < cell_info_strs2.size(); ++i) {
+            String cell_info_str2 = cell_info_strs2.get(i);
+            cell_info_json2 = cell_info_json2 + cell_info_str2;
+            if (i < cell_info_strs.size() - 1)
+                cell_info_json2 = cell_info_json2 + ",";
+        }
+        cell_info_json2 = cell_info_json2 + "]";
         String wifi_info_json2 = gson.toJson(wifiInfo);
         fastBTSRecord.cell_info = cell_info_json2;
         fastBTSRecord.wifi_info = wifi_info_json2;
