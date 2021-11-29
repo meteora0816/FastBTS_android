@@ -524,6 +524,7 @@ public class FastBTS {
                         msg.append(line).append("\n");
                     }
 
+                    Log.d("msg:", String.valueOf(msg));
                     reader.close();
                 }
 //                Log.d("conn response", String.valueOf(conn.getResponseCode()));
@@ -571,15 +572,12 @@ public class FastBTS {
             cell_info_json = cell_info_json + cell_info_str + ",";
         cell_info_json = cell_info_json.substring(0, cell_info_json.length() - 1) + "]";
         String wifi_info_json = gson.toJson(wifiInfo);
-        Log.d("CellInfo", cell_info_json);
-        Log.d("WifiInfo", wifi_info_json);
 
         /* Set constant timestamp */
         Timer timer = new Timer();
         timer.schedule(new ContinuesUpdateTask(myNetworkInfo), 0, 500);
 
 
-//        Log.d("network type", "aaa");
         stop = false;
         fastBTSRecord = new FastBTSRecord();
         fastBTSRecord.setDataFromYouSheng(user_uid, brand, model, os_type, os_version,
@@ -1046,7 +1044,11 @@ public class FastBTS {
         WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
         String SSID = wifiInfo.getSSID();
-        String BSSID = wifiInfo.getBSSID();
+        String BSSID;
+        if (wifiInfo.getBSSID() == null)
+            BSSID= "NULL";
+        else
+            BSSID= wifiInfo.getBSSID();
         String rssi = String.valueOf(wifiInfo.getRssi());
         String linkSpeed = String.valueOf(wifiInfo.getLinkSpeed());
         String networkId = String.valueOf(wifiInfo.getNetworkId());
@@ -1056,14 +1058,12 @@ public class FastBTS {
         //get nearby ScanResult Info
         List<ScanResult> myScanResults = wifiManager.getScanResults();
         String ScanResultLength = String.valueOf(myScanResults.size());
-        Log.d("###ScanResultLength", ScanResultLength);
-        String ScanResultInfo = "";
+        // Log.d("###ScanResultLength", ScanResultLength);
+        StringBuilder ScanResultInfo = new StringBuilder();
         for (ScanResult oneScanResult : myScanResults) {
             //API Level 1
             String tmpBSSID = oneScanResult.BSSID;
             String tmpSSID = oneScanResult.SSID;
-//            Log.d("###out: ", (tmpSSID +" "+tmpBSSID+ "!!!\n"));
-            // Log.d("###tmpSSID",tmpSSID);
             String tmpFrequency = String.valueOf(oneScanResult.frequency);
             String tmpLevel = String.valueOf(oneScanResult.level);
             //API Level 23
@@ -1077,16 +1077,20 @@ public class FastBTS {
                 tmpStandard = String.valueOf(oneScanResult.getWifiStandard());
             else
                 tmpStandard = "Added in API level 30";
-            ScanResultInfo += tmpBSSID + "," + tmpSSID + "," + tmpFrequency + "," + tmpLevel + "," +
-                    tmpChannelWidth + "," + tmpStandard + ";";
-//            Log.d("###Nearby AP Info:", ScanResultInfo);
+            ScanResultInfo.append(tmpBSSID).append(",").append(tmpSSID).append(",").append(tmpFrequency).append(",").append(tmpLevel).append(",").append(tmpChannelWidth).append(",").append(tmpStandard).append(";");
         }
 
 
         String passpointFqdn, passpointProviderFriendlyName, rxLinkSpeedMbps, txLinkSpeedMbps;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            passpointFqdn = wifiInfo.getPasspointFqdn();
-            passpointProviderFriendlyName = wifiInfo.getPasspointProviderFriendlyName();
+            if (wifiInfo.getPasspointFqdn() == null)
+                passpointFqdn = "NULL";
+            else
+                passpointFqdn = wifiInfo.getPasspointFqdn();
+            if (wifiInfo.getPasspointProviderFriendlyName() == null)
+                passpointProviderFriendlyName = "NULL";
+            else
+                passpointProviderFriendlyName = wifiInfo.getPasspointProviderFriendlyName();
             rxLinkSpeedMbps = String.valueOf(wifiInfo.getRxLinkSpeedMbps());
             txLinkSpeedMbps = String.valueOf(wifiInfo.getTxLinkSpeedMbps());
         } else {
@@ -1116,7 +1120,7 @@ public class FastBTS {
         return new MyNetworkInfo.WifiInfo(SSID, BSSID, rssi, linkSpeed, networkId, frequency,
                 passpointFqdn, passpointProviderFriendlyName, rxLinkSpeedMbps, txLinkSpeedMbps,
                 maxSupportedRxLinkSpeedMbps, maxSupportedTxLinkSpeedMbps, wifiStandard,
-                currentSecurityType, subscriptionId, hiddenSSID, ScanResultLength, ScanResultInfo);
+                currentSecurityType, subscriptionId, hiddenSSID, ScanResultLength, ScanResultInfo.toString());
     }
 
     public class ContinuesUpdateTask extends TimerTask {
@@ -1200,14 +1204,12 @@ public class FastBTS {
                                 MyNetworkInfo.CellInfo.CellIdentityLte identity_lte = (MyNetworkInfo.CellInfo.CellIdentityLte) tmp.cellIdentity;
                                 MyNetworkInfo.CellInfo.CellSignalStrengthLte ss_lte = (MyNetworkInfo.CellInfo.CellSignalStrengthLte) tmp.cellSignalStrength;
                                 if (identity_lte.cell_ci.equals(String.valueOf(cellInfoLte.getCellIdentity().getCi())) && identity_lte.cell_pci.equals(String.valueOf(cellInfoLte.getCellIdentity().getPci()))) {
-//                                    Log.d("!!!!!!!!!!!!!!","!!!!!!!!!!!!!!!!!!!");
                                     ss_lte.cell_dbm += (";" + String.valueOf(cellInfoLte.getCellSignalStrength().getDbm()));
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                         ss_lte.cell_rsrp += ";";
                                         ss_lte.cell_rsrp += String.valueOf(cellInfoLte.getCellSignalStrength().getRsrp());
                                         ss_lte.cell_rsrq += ";";
                                         ss_lte.cell_rsrq += String.valueOf(cellInfoLte.getCellSignalStrength().getRsrq());
-//                                        Log.d("!!!!!!!!!rsrp",ss_lte.rsrp);
                                     }
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                                         ss_lte.cell_rssi += (";" + String.valueOf(cellInfoLte.getCellSignalStrength().getRssi()));
