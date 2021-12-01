@@ -63,7 +63,7 @@ public class FastBTS {
     final static private int Timeout = 8000;        // connect timeout
     final static private int PingTimeout = 8000;
     final static private String MasterServerIP = "118.31.164.30";
-
+    static private Timer timer;
     private int DownloadSizeSleep = 50;// ms
     private int CISSleep = 200;// ms
     private int TimeWindow = 2000; // ms
@@ -76,6 +76,7 @@ public class FastBTS {
     static boolean stop;
 
     static public void Stop() {
+        timer.cancel();
         stop = true;
     }
 
@@ -578,7 +579,7 @@ public class FastBTS {
         String wifi_info_json = gson.toJson(wifiInfo);
 
         /* Set constant timestamp */
-        Timer timer = new Timer();
+        timer = new Timer();
         timer.schedule(new ContinuesUpdateTask(myNetworkInfo), 0, 500);
 
 
