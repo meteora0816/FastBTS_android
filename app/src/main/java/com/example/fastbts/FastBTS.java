@@ -76,7 +76,9 @@ public class FastBTS {
     static boolean stop;
 
     static public void Stop() {
-        timer.cancel();
+        if (timer != null) {
+            timer.cancel();
+        }
         stop = true;
     }
 

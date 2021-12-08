@@ -100,6 +100,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.button:
+                FastBTS.Stop();
                 new Thread(() -> {
                     double bandwidth = 0;
                     bandwidth = new FastBTS(this).SpeedTest("1712382", "", "", "", "", "", "", "", "", "", "", "", "", "", "500");
