@@ -103,7 +103,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 FastBTS.Stop();
                 new Thread(() -> {
                     double bandwidth = 0;
-                    bandwidth = new FastBTS(this).SpeedTest("1712382", "", "", "", "", "", "", "", "", "", "", "", "", "", "500");
+
+                    try {
+                        bandwidth = new FastBTS(this).SpeedTest("1712382", "", "", "", "", "", "", "", "", "", "", "", "", "", "500");
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
 //                    Log.d("bandwidth result", String.valueOf(bandwidth));
                     Message msg = Message.obtain();
                     msg.obj = bandwidth + "Mbps";
