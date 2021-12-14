@@ -317,6 +317,7 @@ public class FastBTS {
                         MaxTrafficUse = jsonObject.getInt("max_traffic_use");
                         Threshold = jsonObject.getDouble("threshold");
                         double serverSelectCnt = jsonObject.getInt("server_num");
+//                        Log.d("GetInfoInterval", String.valueOf(GetInfoInterval));
                         jsonArray = jsonObject.getJSONArray("ip_list");
                         for (int i = 0; i < serverSelectCnt; i++) {
                             ipSelected.add(jsonArray.getString(i));
@@ -1219,15 +1220,13 @@ public class FastBTS {
             }
 
             public void run() {
-                try {
-                    Thread t = new sendThread(databaseIp);
-                    t.start();
-                    t.join();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                long startTime = System.currentTimeMillis();
                 monitorWiFiInfo();
                 monitorCellInfo();
+                Thread t = new sendThread(databaseIp);
+                t.start();
+//              t.join();
+//                Log.d("info time", String.valueOf(System.currentTimeMillis() - startTime));
             }
 
             public void monitorWiFiInfo() {
