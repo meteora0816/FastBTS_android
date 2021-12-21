@@ -581,8 +581,8 @@ public class FastBTS {
             String wifi_info_json = gson.toJson(myNetworkInfo.wifiInfo);
             fastBTSRecord.cell_info = cell_info_json;
             fastBTSRecord.wifi_info = wifi_info_json;
-//            Log.d("CellInfo", cell_info_json);
-//            Log.d("WifiInfo", wifi_info_json);
+            Log.d("CellInfo", cell_info_json);
+            Log.d("WifiInfo", wifi_info_json);
             try {
                 JSONObject obj = new JSONObject();
 //                Log.d("id=", fastBTSRecord.id);
@@ -1076,10 +1076,8 @@ public class FastBTS {
             TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    Looper.prepare();
-                    Toast.makeText(context, "No permission: ACCESS_FINE_LOCATION", Toast.LENGTH_SHORT).show();
-                    Looper.loop();
-                    return null;
+                    Log.d("No permission:", "ACCESS_FINE_LOCATION");
+                    return new ArrayList<>();
                 }
             }
             List<CellInfo> cellInfoList = telephonyManager.getAllCellInfo();
@@ -1252,9 +1250,8 @@ public class FastBTS {
                 TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     if (context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                        Looper.prepare();
-                        Toast.makeText(context, "No permission: ACCESS_FINE_LOCATION", Toast.LENGTH_SHORT).show();
-                        Looper.loop();
+                        Log.d("No permission:", "ACCESS_FINE_LOCATION");
+                        return;
                     }
                 }
 
