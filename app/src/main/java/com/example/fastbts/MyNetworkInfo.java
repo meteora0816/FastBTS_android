@@ -1,8 +1,10 @@
 package com.example.fastbts;
 
+import androidx.annotation.NonNull;
+
 import java.util.List;
 
-public class MyNetworkInfo {
+public class MyNetworkInfo implements Cloneable{
     public String apiLevel;
     public String connectionType;
     public List<CellInfo> cellInfo;

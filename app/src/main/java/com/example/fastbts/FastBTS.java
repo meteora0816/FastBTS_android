@@ -220,9 +220,11 @@ public class FastBTS {
         StringBuilder selected_server_ips;
         StringBuilder all_server_ip_latencies_ms;
         String networkType;
+        MyNetworkInfo networkInfo;
 
-        InitThread(String ip, String _networkType) {
+        InitThread(String ip, String _networkType, MyNetworkInfo _networkInfo) {
             this.networkType = _networkType;
+            this.networkInfo = _networkInfo;
             this.masterIp = ip;
             this.ipList = new ArrayList<>();
             this.ipSelected = new ArrayList<>();
@@ -233,7 +235,7 @@ public class FastBTS {
         public void run() {
             try {
                 URL url = new URL("http://" + masterIp + ":8080/speedtest/iplist/available");
-//                Log.d("url", url.toString());
+                Log.d("url", url.toString());
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setConnectTimeout(Timeout);
@@ -255,8 +257,8 @@ public class FastBTS {
                     clientIp = jsonObject.getString("client_ip");
                     conn.disconnect();
 //                    Log.d("serverNum", String.valueOf(serverNum));
-//                    Log.d("ipList", ipList.toString());
-//                    Log.d("clientIp", clientIp);
+                    Log.d("ipList", ipList.toString());
+                    Log.d("clientIp", clientIp);
                     // ping test
                     ArrayList<PingThread> pingThread = new ArrayList<PingThread>();
                     for (String ip : ipList) {
@@ -287,7 +289,34 @@ public class FastBTS {
                     reqJSON.put("network_type", networkType);
                     JSONArray arr = new JSONArray(serverSortedByRTT);
                     reqJSON.put("servers_sorted_by_rtt", arr);
-                    URL url2 = new URL("http://" + masterIp + ":8080/speedtest/info");
+                    Gson gson = new Gson();
+                    ArrayList<String> cell_info_strs = new ArrayList<>();
+                    for (MyNetworkInfo.CellInfo cellInfo : networkInfo.cellInfo) {
+                        MyNetworkInfo.CellInfo.CellIdentity cellIdentity = cellInfo.cellIdentity;
+                        MyNetworkInfo.CellInfo.CellSignalStrength cellSignalStrength = cellInfo.cellSignalStrength;
+
+                        String cell_identity_str = gson.toJson(cellIdentity);
+                        String cell_signal_strength_str = gson.toJson(cellSignalStrength);
+
+                        String cell_info_str = "{" +
+                                "\"cell_Type\": " + "\"" + cellInfo.cell_Type + "\"," +
+                                cell_identity_str.substring(1, cell_identity_str.length() - 1) + "," +
+                                cell_signal_strength_str.substring(1, cell_signal_strength_str.length() - 1) +
+                                "}";
+                        cell_info_strs.add(cell_info_str);
+                    }
+                    String cell_info_json = "[";
+                    for (int i = 0; i < cell_info_strs.size(); ++i) {
+                        String cell_info_str = cell_info_strs.get(i);
+                        cell_info_json = cell_info_json + cell_info_str;
+                        if (i < cell_info_strs.size() - 1)
+                            cell_info_json = cell_info_json + ",";
+                    }
+                    cell_info_json = cell_info_json + "]";
+                    String wifi_info_json = gson.toJson(networkInfo.wifiInfo);
+                    reqJSON.put("network_wifi_info", wifi_info_json);
+                    reqJSON.put("network_cell_info", cell_info_json);
+                    URL url2 = new URL("http://" + masterIp + ":8080/v2/speedtest/info");
                     HttpURLConnection conn2 = (HttpURLConnection) url2.openConnection();
                     conn2.setRequestMethod("POST");
                     conn2.setConnectTimeout(Timeout);
@@ -394,11 +423,11 @@ public class FastBTS {
         }
     }
 
-    public ArrayList<String> getServerIP(String networkType) {
+    public ArrayList<String> getServerIP(String networkType, MyNetworkInfo networkInfo) {
         /*
          * 先向服务器要所有可用的ip list，再测试ping，测试结果发送给服务端，服务端发来供使用的下载服务器
          * */
-        InitThread initThread = new InitThread(MasterServerIP, networkType);
+        InitThread initThread = new InitThread(MasterServerIP, networkType, networkInfo);
         try {
             initThread.start();
             initThread.join();
@@ -416,7 +445,7 @@ public class FastBTS {
         String id; // the record id in database
         String ip;
         String bandwidth_Mbps;
-        String web_or_app = "app2";
+//        String web_or_app = "app2";
         String duration_s;
         String traffic_MB;
         StringBuilder collected_samples_Mbps;
@@ -481,7 +510,7 @@ public class FastBTS {
         public void getIdFromServer() {
             try {
                 JSONObject obj = new JSONObject();
-                obj.put("web_or_app", "app2");
+                obj.put("web_or_app", "app3");
                 obj.put("user_uid", "xxx");
                 obj.put("ip", "xxx");
                 obj.put("bandwidth_Mbps", "xxx");
@@ -533,7 +562,7 @@ public class FastBTS {
                         msg.append(line).append("\n");
                     }
 
-//                    Log.d("msg:", String.valueOf(msg));
+                    Log.d("msg:", String.valueOf(msg));
                     id = msg.toString();
                     reader.close();
                 }
@@ -590,7 +619,7 @@ public class FastBTS {
                 obj.put("user_uid", fastBTSRecord.user_uid);
                 obj.put("ip", fastBTSRecord.ip);
                 obj.put("bandwidth_Mbps", fastBTSRecord.bandwidth_Mbps);
-                obj.put("web_or_app", "add");
+                obj.put("web_or_app", "add2");
                 obj.put("duration_s", fastBTSRecord.duration_s);
                 obj.put("traffic_MB", fastBTSRecord.traffic_MB);
                 obj.put("collected_samples_Mbps", fastBTSRecord.collected_samples_Mbps);
@@ -685,7 +714,7 @@ public class FastBTS {
             timer.schedule(new ContinuesUpdateTask(myNetworkInfo), 0, GetInfoInterval);
 
             // 服务器选择机制
-            ArrayList<String> serverIP = getServerIP(network_type);
+            ArrayList<String> serverIP = getServerIP(network_type, myNetworkInfo);
 
             if (serverIP.isEmpty() && fastBTSRecord.is_valid != "0") {
                 fastBTSRecord.is_valid = "0";
