@@ -248,17 +248,22 @@ public class FastBTS {
                 byte[] receive_buf = new byte[BUFFER_SIZE * 2];
                 DatagramPacket receive_packet = new DatagramPacket(receive_buf, receive_buf.length);
 
+                long start_time = System.currentTimeMillis();
                 while (true) {
                     socket.receive(receive_packet);
                     String receive_data = new String(receive_packet.getData(), 0, receive_packet.getLength());
                     size += receive_data.length();
+                    // NOTICE: if blocked at socket.receive, interrupted will not work.
                     if (Thread.interrupted()) {
                         socket.close();
                         break;
                     }
                 }
+                long end_time = System.currentTimeMillis();
+                Log.d("UDP Test", "Time cost:" + (float) (end_time - start_time) / 1000 + "ms");
             } catch (IOException e) {
-                e.printStackTrace();
+//                e.printStackTrace();
+                Log.d("UDP Test", "receive_packet blocked.");
             }
 
         }
@@ -842,10 +847,10 @@ public class FastBTS {
 //                Log.d("speed ", String.valueOf(checker.CISSpeed));
                 if (nowTime - startTime >= 2500 && checker.finish) {
                     fastBTSRecord.is_valid = "1";
-                    if (nowTime - startTime >= TestTimeout) {
-                        break;
-                    }
-//                    break;
+//                    if (nowTime - startTime >= TestTimeout) {
+//                        break;
+//                    }
+                    break;
                 }
                 if (nowTime - startTime >= TestTimeout) {
                     fastBTSRecord.othersAdd("Exceeding the time limit");
