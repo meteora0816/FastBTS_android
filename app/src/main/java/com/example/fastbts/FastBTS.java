@@ -41,14 +41,21 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.SocketException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -186,6 +193,10 @@ public class FastBTS {
             }
         }
 
+        public DownloadThread() {
+
+        }
+
         public void run() {
             try {
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -210,6 +221,49 @@ public class FastBTS {
             }
         }
     }
+
+    class UDPDownloadThread extends DownloadThread {
+        InetAddress address;
+        int port;
+
+        UDPDownloadThread(String ip, int port) {
+            super();
+            try {
+                this.address = InetAddress.getByName(ip);
+                this.port = port;
+            } catch (IOException e) {
+//                e.printStackTrace();
+            }
+        }
+
+        public void run() {
+            byte[] send_data = "1".getBytes();
+            DatagramPacket send_packet = new DatagramPacket(send_data, send_data.length, address, port);
+            try {
+                DatagramSocket socket = new DatagramSocket();
+                socket.setSoTimeout(Timeout);
+                socket.send(send_packet);
+
+                int BUFFER_SIZE = 1024;
+                byte[] receive_buf = new byte[BUFFER_SIZE * 2];
+                DatagramPacket receive_packet = new DatagramPacket(receive_buf, receive_buf.length);
+
+                while (true) {
+                    socket.receive(receive_packet);
+                    String receive_data = new String(receive_packet.getData(), 0, receive_packet.getLength());
+                    size += receive_data.length();
+                    if (Thread.interrupted()) {
+                        socket.close();
+                        break;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
 
     class InitThread extends Thread {
         String masterIp;
@@ -714,7 +768,8 @@ public class FastBTS {
             timer.schedule(new ContinuesUpdateTask(myNetworkInfo), 0, GetInfoInterval);
 
             // 服务器选择机制
-            ArrayList<String> serverIP = getServerIP(network_type, myNetworkInfo);
+//            ArrayList<String> serverIP = getServerIP(network_type, myNetworkInfo);
+            ArrayList<String> serverIP = new ArrayList<String>(Arrays.asList("124.223.35.212", "124.223.41.138")); // Used for UDP
 
             if (serverIP.isEmpty() && fastBTSRecord.is_valid != "0") {
                 fastBTSRecord.is_valid = "0";
@@ -736,7 +791,8 @@ public class FastBTS {
 
             ArrayList<DownloadThread> downloadThread = new ArrayList<>();
             for (String ip : serverIP) {
-                downloadThread.add(new DownloadThread("http://" + ip + "/datafile?" + Math.floor(Math.random() * 100000)));
+//                downloadThread.add(new DownloadThread("http://" + ip + "/datafile?" + Math.floor(Math.random() * 100000)));
+                downloadThread.add(new UDPDownloadThread(ip, 9876)); // Used for UDP
             }
 
             ArrayList<Double> speedSample = new ArrayList<>();
