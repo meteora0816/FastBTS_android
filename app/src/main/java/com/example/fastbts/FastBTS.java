@@ -69,6 +69,7 @@ public class FastBTS {
 
     final static private int Timeout = 8000;        // connect timeout
     final static private int PingTimeout = 8000;
+    final static private int UDPTimeout = 3000;
     final static private String MasterServerIP = "118.31.164.30";
     final static private String databaseIp = "47.104.134.102";
     static private Timer timer;
@@ -241,7 +242,7 @@ public class FastBTS {
             DatagramPacket send_packet = new DatagramPacket(send_data, send_data.length, address, port);
             try {
                 DatagramSocket socket = new DatagramSocket();
-                socket.setSoTimeout(Timeout);
+                socket.setSoTimeout(UDPTimeout);
                 socket.send(send_packet);
 
                 int BUFFER_SIZE = 1024;
@@ -259,8 +260,6 @@ public class FastBTS {
                         break;
                     }
                 }
-                long end_time = System.currentTimeMillis();
-                Log.d("UDP Test", "Time cost:" + (float) (end_time - start_time) / 1000 + "ms");
             } catch (IOException e) {
 //                e.printStackTrace();
                 Log.d("UDP Test", "receive_packet blocked.");
@@ -669,8 +668,8 @@ public class FastBTS {
             String wifi_info_json = gson.toJson(myNetworkInfo.wifiInfo);
             fastBTSRecord.cell_info = cell_info_json;
             fastBTSRecord.wifi_info = wifi_info_json;
-            Log.d("CellInfo", cell_info_json);
-            Log.d("WifiInfo", wifi_info_json);
+//            Log.d("CellInfo", cell_info_json);
+//            Log.d("WifiInfo", wifi_info_json);
             try {
                 JSONObject obj = new JSONObject();
 //                Log.d("id=", fastBTSRecord.id);
@@ -714,8 +713,8 @@ public class FastBTS {
                 conn.setConnectTimeout(Timeout);
                 conn.setReadTimeout(Timeout);
                 conn.setRequestProperty("content-type", "application/json");
-                Log.d("json = ",obj.toString());
-                Log.d("len(json) = ", String.valueOf(obj.toString().length()));
+//                Log.d("json = ",obj.toString());
+//                Log.d("len(json) = ", String.valueOf(obj.toString().length()));
                 OutputStream outStream = conn.getOutputStream();
                 outStream.write(obj.toString().getBytes());
                 outStream.flush();
@@ -733,8 +732,8 @@ public class FastBTS {
 //                    Log.d("msg:", String.valueOf(msg));
                     reader.close();
                 }
-                Log.d("conn response", String.valueOf(conn.getResponseCode()));
-                Log.d("database response", msg.toString());
+//                Log.d("conn response", String.valueOf(conn.getResponseCode()));
+//                Log.d("database response", msg.toString());
                 conn.disconnect();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -845,13 +844,14 @@ public class FastBTS {
 
 //                Log.d("time:", String.valueOf(nowTime - startTime));
 //                Log.d("speed ", String.valueOf(checker.CISSpeed));
-                if (nowTime - startTime >= 2500 && checker.finish) {
-                    fastBTSRecord.is_valid = "1";
-//                    if (nowTime - startTime >= TestTimeout) {
-//                        break;
-//                    }
-                    break;
-                }
+//
+//                if (checker.finish) {
+//                    fastBTSRecord.is_valid = "1";
+////                    if (nowTime - startTime >= TestTimeout) {
+////                        break;
+////                    }
+//                    break;
+//                }
                 if (nowTime - startTime >= TestTimeout) {
                     fastBTSRecord.othersAdd("Exceeding the time limit");
                     break;
@@ -882,7 +882,7 @@ public class FastBTS {
             t.join();
 
             Log.d("timecost", fastBTSRecord.duration_s);
-
+            Log.d("collected_samples_Mbps", String.valueOf(fastBTSRecord.collected_samples_Mbps));
             return checker.CISSpeed;
         }
 
